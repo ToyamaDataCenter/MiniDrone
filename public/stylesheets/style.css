@@ -1,0 +1,85 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+h1, p {
+  margin: 0px;
+}
+
+input[type="button"] {
+  width: 150px;
+  height: 50px;
+}
+
+#allbox {
+  margin: 0px auto;
+  width: 500px;
+  border: gray solid 1px;
+}
+
+#headerbox {
+  padding: 20px 0px;
+  text-align: center;
+  background-color: gray;
+  color: white;
+}
+
+#buttonArea {
+  width: 350px;
+  margin: 0px auto;
+  padding: 20px;
+}
+
+#takeoffbox {
+  margin: 5px;
+}
+
+#takeoff {
+  margin: 0px 10px 10px 5px;
+}
+
+#landing {
+  margin: 0px 10px 10px 5px;
+}
+
+#centerbox {
+  margin: 10px 5px;
+  height: 150px;
+}
+
+#updownbox {
+  margin-right: 10px;
+  float:left;
+}
+
+#up {
+  margin: 5px;
+}
+
+#down {
+  margin: 5px;
+}
+
+#flipbox {
+  /*margin: 5px;*/
+  float:left;
+}
+
+#frontFlip {
+  margin: 5px;
+}
+
+#backFlip {
+  margin: 5px;
+}
+
+#releasebox {
+  margin: 10px 5px;
+  clear:left;
+  text-align: center;
+}
+
+#release {
+  margin: 0px 10px 10px 5px;
+}

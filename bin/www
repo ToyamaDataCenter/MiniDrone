@@ -1,0 +1,220 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('drone:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ * ポート番号 3000で待ち受け
+ */
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+// Socketサーバー
+// 192.168.102.147:7000で待ち受け
+var _tcp_server = require('../models/TcpServer.js');
+var tcp_server = _tcp_server.factory();
+tcp_server.start();
+
+// SocketIOサーバー（クライアント・サーバー間送受信）
+// HTTP（80ポート）で待ち受け
+var _push_server = require('../models/PushServer.js');
+var push_server = _push_server.factory();
+push_server.start(server);
+
+// HTTPに対して接続要求があれば
+push_server.on('connection', function (socket) {
+
+  // クライアントからサーバーへ
+  socket.on('clienttoserver', function (data) {
+    console.log("クライアントからサーバーへ");
+    console.log(data.keydown);
+    keydown(data.keydown);
+  });
+})
+
+// モジュールの読み込み
+const Drone = require('rolling-spider');  // rolling-spider モジュールを使う
+const keypress = require('keypress');     // キーボード操作を取得する keypress モジュールを使う（rolling-spider と同時にインストールされる）
+
+// 変数の設定
+let ACTIVE = true;                        // ドローンがアクティブ状態か否か
+const STEPS = 2;                          // 一度のキー操作で命令を出す回数（動かすステップ数、0-100）
+
+// rolling-spider のインスタンスを作る
+const d = new Drone();
+// ドローンの初期設定
+d.connect(() => {                        // BLE でドローンに接続し、接続できたらコールバック
+  d.setup(() => {                        // ドローンを初期設定してサービスや特徴を取得、その後コールバック
+    d.flatTrim();                         // トリムをリセット
+    d.startPing();                        // 不明
+    d.flatTrim();                         // なぜ二回呼ぶのかは不明
+    ACTIVE = true;                        // ドローンを ACTIVE 状態とする
+    console.log(d.name, 'is ready!');     // 準備OKなことをコンソール出力
+  });
+});
+
+// キー操作でイベントを発生させる
+//keypress(process.stdin);                  // 標準入力に keypress イベントを発生させる
+//process.stdin.setRawMode(true);           // raw mode（修飾を伴わない）で標準入力を受け付ける
+//process.stdin.resume();                   // keypress イベントをリッスン
+
+// キー操作後に少しのあいだ入力を受け付けないようにする関数
+function cooldown() {
+  ACTIVE = false;       // いったん ACTIVE 状態でなくしておいて
+  console.log(ACTIVE);
+  setTimeout(() => {   // 一定時間後に
+    ACTIVE = true;      // ACTIVE に戻す
+    console.log(ACTIVE);
+  }, STEPS * 12);       // この例では 24 ms
+}
+
+// キーボードからの入力による操作
+//process.stdin.on('keypress', (ch, key) => {   // keypress イベントが発生したら
+function keydown(key) {
+  console.log('got "keypress" => ', key);
+
+  if (ACTIVE && key) {
+
+    var param = { tilt: 0, forward: 0, turn: 0, up: 0 };
+
+    if (key === 'l') {
+      console.log('land');
+      d.land();
+    } else if (key === 't') {
+      console.log('takeoff');
+      d.takeOff();
+    } else if (key === 'h') {
+      console.log('hover');
+      d.hover();
+    } else if (key === 'x') {
+      console.log('disconnect');
+      d.disconnect();
+      //process.stdin.pause();
+      //process.exit();
+    }
+
+    if (key === 'up') {
+      d.forward({ steps: STEPS });
+      cooldown();
+    } else if (key === 'down') {
+      d.backward({ steps: STEPS });
+      cooldown();
+    } else if (key === 'right') {
+      d.tiltRight({ steps: STEPS });
+      cooldown();
+    } else if (key === 'left') {
+      d.tiltLeft({ steps: STEPS });
+      cooldown();
+    } else if (key === 'u') {
+      console.log('up');
+      console.log(STEPS);
+      d.up({ steps: STEPS });
+      cooldown();
+    } else if (key === 'd') {
+      console.log('down');
+      d.down({ steps: STEPS });
+      cooldown();
+    }
+
+    if (key === 'm') {
+      param.turn = 90;
+      d.drive(param, STEPS);
+      cooldown();
+    }
+    if (key === 'h') {
+      param.turn = -90;
+      d.drive(param, STEPS);
+      cooldown();
+    }
+    if (key === 'f') {
+      console.log('frontFlip');
+      d.frontFlip();
+      cooldown();
+    }
+    if (key === 'b') {
+      console.log('backFlip');
+      d.backFlip();
+      cooldown();
+    }
+
+  }
+}

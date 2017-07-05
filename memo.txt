@@ -1,0 +1,39 @@
+＜nodeでDrone＞
+
+mkdir drone
+cd drone
+npm install noble
+npm install keypress
+npm install rolling-spider
+
+node find
+	DroneのUUIDを発見
+	app.jsのxxxxxxxxxxxxとなっている部分を書き換え
+
+node app
+	Droneを飛ばす
+
+キーボードで以下の基本キーを押せば操作可能
+	t：離陸（takeoff）
+	l：着陸（landing）
+	矢印キー：キーの方向に進む
+	u：上昇（up）
+	d：下降（down）
+	f：前回転（frontFlip）
+	b：後回転（backFlip）
+	x：接続解除
+
+
+＜Bluetooth接続＞
+
+bluetoothctl
+	bluetooth設定を起動
+[bluetooth]# scan on
+	デバイスのスキャンを開始
+		[CHG] Device XX:XX:XX:XX:XX:XX Name: XXXXXXXX
+[bluetooth]# scan off
+	デバイスのスキャンを停止
+[bluetooth]# pair XX:XX:XX:XX:XX:XX
+	見つかったデバイスに対してペアリング要求
+[bluetooth]# trust XX:XX:XX:XX:XX:XX
+	次回起動時に自動接続
